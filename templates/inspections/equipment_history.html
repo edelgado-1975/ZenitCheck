@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Historial {{ equipment.serial_number }} — ZenitCheck{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="border-b pb-4">
+        <a href="{% url 'equipment:list' %}" class="text-sm font-bold text-zenit-green hover:underline">← Volver al Catálogo</a>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-2">
+            Historial de Inspecciones y Trazabilidad
+        </h1>
+        <p class="text-sm text-gray-600 font-mono">{{ equipment.brand.name }} {{ equipment.model_name }} (Serial: {{ equipment.serial_number }})</p>
+    </div>
+
+    <!-- Línea de tiempo -->
+    <div class="space-y-4">
+        {% for ins in inspections %}
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-gray-500">{{ ins.inspection_date|date:"d M Y — H:i" }}</span>
+                    <span class="text-xs px-2.5 py-0.5 rounded-full font-bold
+                        {% if ins.final_verdict == 'APPROVED' %}badge-green
+                        {% elif ins.final_verdict == 'OBSERVATION' %}badge-amber
+                        {% else %}badge-red{% endif %}">
+                        {{ ins.get_final_verdict_display }}
+                    </span>
+                </div>
+                <p class="text-sm text-gray-800"><b>Inspector:</b> {{ ins.inspector.get_full_name|default:ins.inspector.username }}</p>
+                <p class="text-xs text-gray-500"><b>Ubicación:</b> {{ ins.location|default:"No registrada" }}</p>
+                {% if ins.verdict_override_justification %}
+                <p class="text-xs text-amber-800 bg-amber-50 p-2 rounded mt-2">
+                    <b>Justificación:</b> {{ ins.verdict_override_justification }}
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="flex items-center gap-2">
+                <a href="{% url 'inspections:detail' ins.id %}" class="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                    Ver Detalles
+                </a>
+                {% if ins.is_certified %}
+                <a href="{% url 'reports:download_pdf' ins.id %}" target="_blank" class="px-4 py-2 text-sm font-bold text-white bg-zenit-green hover:bg-green-700 rounded-lg shadow">
+                    PDF Certificado
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-white p-8 rounded-2xl border text-center text-gray-400">
+            No se han registrado inspecciones para este equipo.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

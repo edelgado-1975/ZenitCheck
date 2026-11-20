@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Ficha de Inspección {{ inspection.equipment.serial_number }} — ZenitCheck{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Encabezado con estado y acciones rápidas -->
+    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold bg-gray-100 text-gray-700 px-2.5 py-1 rounded-md">
+                    {{ inspection.equipment.serial_number }}
+                </span>
+                <span class="text-xs text-gray-500">{{ inspection.inspection_date|date:"d M Y H:i" }}</span>
+            </div>
+            <h1 class="text-2xl font-extrabold text-gray-900 mt-1">
+                {{ inspection.equipment.brand.name }} — {{ inspection.equipment.model_name }}
+            </h1>
+            <p class="text-sm text-gray-600">
+                Norma: <span class="font-semibold">{{ inspection.equipment.equipment_type.standard_international }} / {{ inspection.equipment.equipment_type.standard_us }}</span>
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Botón Disparar Análisis de IA -->
+            <a href="{% url 'inspections:analyze_ai' inspection.id %}"
+               onclick="showLoading('Analizando fotografías con red neuronal y visión artificial...')"
+               class="px-4 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow text-sm flex items-center gap-1.5">
+                <span>🤖</span> Analizar con IA
+            </a>
+
+            <!-- Botón Descargar PDF Certificado -->
+            {% if inspection.is_certified %}
+            <a href="{% url 'reports:download_pdf' inspection.id %}" target="_blank"
+               class="px-4 py-2.5 bg-zenit-green text-white font-bold rounded-xl hover:bg-green-700 shadow text-sm flex items-center gap-1.5">
+                <span>📄</span> Descargar Certificado PDF
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Banner de Veredicto Actual -->
+    <div class="p-5 rounded-2xl border flex flex-col sm:flex-row justify-between items-center gap-4
+        {% if inspection.final_verdict == 'APPROVED' %}bg-green-50 border-green-300 text-green-900
+        {% elif inspection.final_verdict == 'OBSERVATION' %}bg-yellow-50 border-yellow-300 text-yellow-950
+        {% else %}bg-red-50 border-red-300 text-red-900{% endif %}">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-bold
+                {% if inspection.final_verdict == 'APPROVED' %}badge-green
+                {% elif inspection.final_verdict == 'OBSERVATION' %}badge-amber
+                {% else %}badge-red{% endif %}">
+                {% if inspection.final_verdict == 'APPROVED' %}✓
+                {% elif inspection.final_verdict == 'OBSERVATION' %}⚠️
+                {% else %}✕{% endif %}
+            </div>
+            <div>
+                <p class="text-xs uppercase font-bold tracking-wider">Veredicto Final Emitido</p>
+                <p class="text-xl font-extrabold">{{ inspection.get_final_verdict_display }}</p>
+                <p class="text-xs">Sugerido por IA: <b>{{ inspection.get_suggested_verdict_display }}</b></p>
+            </div>
+        </div>
+
+        {% if inspection.final_verdict == 'REJECTED' %}
+        <div class="bg-red-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider shadow">
+            ⚠️ Bloqueo Inmediato de Operación
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Galería de Fotos y Hallazgos con Bounding Boxes Superpuestos -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+        <h2 class="text-lg font-bold text-gray-900 flex items-center justify-between">
+            <span>Fotografías Técnicas y Hallazgos de IA</span>
+            <span class="text-xs font-normal text-gray-500">{{ photos.count }} fotos registradas</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for photo in photos %}
+            <div class="border rounded-xl overflow-hidden bg-gray-50 shadow-sm flex flex-col">
+                <div class="relative aspect-video bg-black flex items-center justify-center">
+                    {% if photo.processed_image %}
+                    <img src="{{ photo.processed_image.url }}" alt="Foto con anomalías superpuestas" class="w-full h-full object-contain">
+                    <span class="absolute top-2 right-2 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                        IA Superpuesta
+                    </span>
+                    {% elif photo.image %}
+                    <img src="{{ photo.image.url }}" alt="Foto original" class="w-full h-full object-contain">
+                    {% endif %}
+                </div>
+                <div class="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-gray-700">{{ photo.get_photo_type_display }}</span>
+                            <span class="text-[10px] font-semibold px-2 py-0.5 rounded
+                                {% if photo.ai_status == 'COMPLETED' %}bg-green-100 text-green-800
+                                {% elif photo.ai_status == 'PROCESSING' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-200 text-gray-700{% endif %}">
+                                {{ photo.get_ai_status_display }}
+                            </span>
+                        </div>
+                        <!-- Hallazgos en esta foto -->
+                        {% if photo.findings.all %}
+                        <div class="mt-2 space-y-1">
+                            {% for f in photo.findings.all %}
+                            <div class="text-xs p-1.5 rounded flex items-center justify-between
+                                {% if f.severity == 'CRITICAL' %}bg-red-100 text-red-900
+                                {% elif f.severity == 'MAJOR' %}bg-yellow-100 text-yellow-900
+                                {% else %}bg-green-100 text-green-900{% endif %}">
+                                <span class="font-semibold">{{ f.get_defect_type_display }}</span>
+                                <span class="font-mono font-bold">{{ f.confidence|floatformat:0 }}%</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-xs text-gray-400 mt-2">Sin anomalías detectadas en esta toma.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full py-8 text-center text-gray-400">
+                No hay fotos cargadas. <a href="{% url 'inspections:create' %}" class="text-zenit-green underline">Subir fotos</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Confirmación / Modificación de Veredicto por Inspector Competente -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-gray-900 mb-1">Dictamen y Certificación Técnica</h2>
+        <p class="text-xs text-gray-500 mb-4">
+            El inspector competente tiene la potestad de confirmar o modificar el veredicto sugerido por la IA.
+            Si modifica la sugerencia, se exige una justificación técnica obligatoria que quedará auditada.
+        </p>
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-bold text-gray-800 mb-2">Seleccionar Veredicto Final:</label>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {% for choice in form.final_verdict %}
+                    <label class="border p-3 rounded-xl flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition">
+                        {{ choice.tag }}
+                        <span class="text-sm font-semibold">{{ choice.choice_label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-800 mb-1">
+                    Justificación Técnica (Obligatoria si difiere de la sugerencia de IA):
+                </label>
+                {{ form.verdict_override_justification }}
+                {% if form.verdict_override_justification.errors %}
+                <p class="text-xs text-red-600 mt-1 font-semibold">{{ form.verdict_override_justification.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-end pt-3">
+                <button type="submit" class="px-6 py-3 bg-zenit-green text-white font-bold rounded-xl hover:bg-green-700 shadow">
+                    Guardar y Certificar Equipo
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Historial de Auditoría Inmutable del Veredicto -->
+    {% if audits %}
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">Trazabilidad y Auditoría de Cambios</h3>
+        <div class="space-y-2">
+            {% for a in audits %}
+            <div class="text-xs border-l-2 border-zenit-green pl-3 py-1 text-gray-600">
+                <span class="font-bold text-gray-900">{{ a.user.get_full_name|default:a.user.username }}</span>
+                — {{ a.get_action_display }} a las {{ a.timestamp|date:"d/m/Y H:i:s" }}
+                <div class="mt-0.5 text-gray-500">De <b>{{ a.previous_verdict }}</b> a <b>{{ a.new_verdict }}</b>: {{ a.justification }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

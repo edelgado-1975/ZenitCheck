@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Alertas Técnicas de Certificación — ZenitCheck{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="border-b pb-4">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Alertas de Vencimiento de Certificación</h1>
+        <p class="text-sm text-gray-600">Control preventivo y bloqueo de equipos según norma ANSI Z359 y EN 365</p>
+    </div>
+
+    <!-- Equipos con certificación vencida (Rojo Carmesí) -->
+    <div class="bg-white rounded-2xl border-l-4 border-l-[#DC2626] border-gray-200 p-6 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-red-700 flex items-center gap-2">
+                <span>✕</span> Equipos con Certificación VENCIDA (Bloqueo Inmediato)
+            </h2>
+            <span class="badge-red px-3 py-1 rounded-full text-xs font-bold">{{ expired_equipments.count }} equipos</span>
+        </div>
+
+        <div class="divide-y divide-gray-100">
+            {% for eq in expired_equipments %}
+            <div class="py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                    <span class="font-mono font-bold text-gray-900">{{ eq.serial_number }}</span> —
+                    <span class="font-semibold">{{ eq.brand.name }}</span> ({{ eq.model_name }})
+                    <p class="text-xs text-red-600">Venció el {{ eq.certification_expiry_date|date:"d/m/Y" }} (hace {{ eq.days_until_expiry|stringformat:"+d"|slice:"1:" }} días)</p>
+                </div>
+                <a href="{% url 'inspections:create' %}?equipment={{ eq.id }}" class="px-3.5 py-1.5 bg-red-600 text-white font-bold rounded-lg text-xs hover:bg-red-700 shadow">
+                    Re-Inspeccionar Ahora
+                </a>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-400 py-2">No hay equipos vencidos actualmente.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Equipos próximos a vencer (Ámbar) -->
+    <div class="bg-white rounded-2xl border-l-4 border-l-[#EAB308] border-gray-200 p-6 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-yellow-800 flex items-center gap-2">
+                <span>⚠️</span> Equipos Próximos a Vencer (&le; 30 Días)
+            </h2>
+            <span class="badge-amber px-3 py-1 rounded-full text-xs font-bold">{{ expiring_soon_equipments.count }} equipos</span>
+        </div>
+
+        <div class="divide-y divide-gray-100">
+            {% for eq in expiring_soon_equipments %}
+            <div class="py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                    <span class="font-mono font-bold text-gray-900">{{ eq.serial_number }}</span> —
+                    <span class="font-semibold">{{ eq.brand.name }}</span> ({{ eq.model_name }})
+                    <p class="text-xs text-yellow-800 font-semibold">Vence en {{ eq.days_until_expiry }} días ({{ eq.certification_expiry_date|date:"d/m/Y" }})</p>
+                </div>
+                <a href="{% url 'inspections:create' %}?equipment={{ eq.id }}" class="px-3.5 py-1.5 bg-yellow-500 text-gray-950 font-bold rounded-lg text-xs hover:bg-yellow-600 shadow">
+                    Programar Inspección
+                </a>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-400 py-2">No hay equipos próximos a vencer en los próximos 30 días.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
