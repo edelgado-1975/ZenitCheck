@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard de Inspección — ZenitCheck{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Panel de Control de Alturas</h1>
+            <p class="text-sm text-gray-600">Estado operativo y control de vencimiento de equipos certificados</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'equipment:list' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold bg-white text-gray-700 hover:bg-gray-50 shadow-sm">
+                Catálogo de Equipos
+            </a>
+            <a href="/inspections/new/" class="inline-flex items-center px-4 py-2 bg-zenit-green text-white rounded-lg text-sm font-bold hover:bg-green-700 shadow">
+                + Nueva Inspección
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjetas de métricas con código de color obligatorio -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Equipos</p>
+                <p class="text-3xl font-extrabold text-gray-900 mt-1">{{ total_equipments }}</p>
+            </div>
+            <div class="p-3 bg-blue-50 text-blue-600 rounded-xl text-2xl">📦</div>
+        </div>
+
+        <!-- Verde Esmeralda: Apto / Operativo -->
+        <div class="bg-white p-5 rounded-2xl border-l-4 border-l-[#16A34A] border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-[#16A34A] uppercase tracking-wider">Aptos / Operativos</p>
+                <p class="text-3xl font-extrabold text-gray-900 mt-1">{{ operational }}</p>
+                <span class="text-xs text-gray-400">Verde Esmeralda</span>
+            </div>
+            <div class="p-3 bg-green-50 text-[#16A34A] rounded-xl text-2xl font-bold">✓</div>
+        </div>
+
+        <!-- Ámbar: En Observación / Próximo a vencer -->
+        <div class="bg-white p-5 rounded-2xl border-l-4 border-l-[#EAB308] border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-yellow-800 uppercase tracking-wider">En Observación</p>
+                <p class="text-3xl font-extrabold text-gray-900 mt-1">{{ observation }}</p>
+                <span class="text-xs text-gray-500">Próximos a vencer (<30d)</span>
+            </div>
+            <div class="p-3 bg-yellow-50 text-yellow-800 rounded-xl text-2xl font-bold">⚠️</div>
+        </div>
+
+        <!-- Rojo Carmesí: Fuera de servicio / Rechazado -->
+        <div class="bg-white p-5 rounded-2xl border-l-4 border-l-[#DC2626] border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-[#DC2626] uppercase tracking-wider">Fuera de Servicio</p>
+                <p class="text-3xl font-extrabold text-gray-900 mt-1">{{ out_of_service }}</p>
+                <span class="text-xs text-red-500 font-semibold">Bloqueo Inmediato</span>
+            </div>
+            <div class="p-3 bg-red-50 text-[#DC2626] rounded-xl text-2xl font-bold">✕</div>
+        </div>
+    </div>
+
+    <!-- Lista reciente de equipos -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-gray-900">Equipos Registrados Recientemente</h2>
+            <a href="{% url 'equipment:list' %}" class="text-sm font-semibold text-zenit-green hover:underline">Ver todos →</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b">
+                    <tr>
+                        <th class="px-6 py-3">Serial</th>
+                        <th class="px-6 py-3">Marca / Modelo</th>
+                        <th class="px-6 py-3">Tipo</th>
+                        <th class="px-6 py-3">Fabricación</th>
+                        <th class="px-6 py-3">Vencimiento Cert.</th>
+                        <th class="px-6 py-3">Estado</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for eq in recent_equipments %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 font-mono font-bold text-gray-900">{{ eq.serial_number }}</td>
+                        <td class="px-6 py-4">
+                            <span class="font-semibold text-gray-900">{{ eq.brand.name }}</span><br>
+                            <span class="text-xs text-gray-500">{{ eq.model_name }}</span>
+                        </td>
+                        <td class="px-6 py-4">{{ eq.equipment_type.name }}</td>
+                        <td class="px-6 py-4">{{ eq.manufacturing_date|date:"Y-m-d" }}</td>
+                        <td class="px-6 py-4 font-semibold {% if eq.is_expired %}text-red-600{% elif eq.is_expiring_soon %}text-yellow-800{% else %}text-green-700{% endif %}">
+                            {{ eq.certification_expiry_date|date:"Y-m-d" }}
+                            {% if eq.is_expired %}
+                                <span class="block text-xs text-red-500">Vencido (hace {{ eq.days_until_expiry|stringformat:"+d"|slice:"1:" }} d)</span>
+                            {% elif eq.is_expiring_soon %}
+                                <span class="block text-xs text-yellow-700">Vence en {{ eq.days_until_expiry }} d</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if eq.status == 'OPERATIONAL' %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold badge-green">Apto</span>
+                            {% elif eq.status == 'OBSERVATION' %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold badge-amber">Observación</span>
+                            {% elif eq.status == 'OUT_OF_SERVICE' %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold badge-red">Fuera de Servicio</span>
+                            {% else %}
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">En Inspección</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-400">No hay equipos registrados aún.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Mi Perfil Técnico — ZenitCheck{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-6">
+    <div class="bg-white shadow rounded-2xl p-6 sm:p-8 border border-gray-100">
+        <div class="flex items-center space-x-4 border-b pb-6">
+            <div class="w-16 h-16 rounded-full bg-green-100 text-zenit-green flex items-center justify-center text-2xl font-bold">
+                {{ user_obj.first_name|first|default:user_obj.username|first|upper }}
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ user_obj.get_full_name|default:user_obj.username }}</h1>
+                <p class="text-sm font-semibold text-zenit-green">{{ user_obj.get_role_display }}</p>
+                <p class="text-xs text-gray-500">Miembro desde {{ user_obj.date_joined|date:"d M Y" }}</p>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="mt-6 space-y-6">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                    {{ form.first_name }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Apellidos</label>
+                    {{ form.last_name }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                    {{ form.email }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Licencia SST / Certificación Alturas</label>
+                    {{ form.license_number }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                    {{ form.phone_number }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Empresa / Organización</label>
+                    {{ form.company }}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sello / Rúbrica Digital (Imagen PNG para PDF)</label>
+                {{ form.digital_signature_stamp }}
+                {% if user_obj.digital_signature_stamp %}
+                <div class="mt-2">
+                    <p class="text-xs text-gray-500 mb-1">Firma actual registrada:</p>
+                    <img src="{{ user_obj.digital_signature_stamp.url }}" alt="Firma registrada" class="h-16 border rounded bg-white p-1">
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-end pt-4 border-t">
+                <button type="submit" class="px-6 py-2.5 bg-zenit-green text-white font-semibold rounded-lg hover:bg-green-700 shadow">
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
