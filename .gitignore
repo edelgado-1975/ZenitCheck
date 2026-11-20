@@ -2,6 +2,11 @@
 # ZenitCheck - .gitignore
 # ============================================
 
+# Private user documents & credentials (strictly local, never in git/github)
+documentos/
+*credenciales*
+*crendenciales*
+
 # Python
 __pycache__/
 *.py[cod]
