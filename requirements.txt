@@ -1,0 +1,39 @@
+# ============================================
+# ZenitCheck - Dependencias con versiones fijadas
+# ============================================
+# Python 3.13.3 | Django 5.2 LTS (EOL abril 2028)
+# ============================================
+
+# --- Core Django ---
+Django==5.2.19
+python-decouple==3.8
+psycopg2-binary==2.9.10
+
+# --- Procesamiento de Imágenes ---
+Pillow==13.0.0
+opencv-python-headless==4.11.0.86
+
+# --- IA / Visión Artificial ---
+# Instalar PyTorch CPU: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+torch==2.6.0
+torchvision==0.21.0
+
+# --- Generación de PDF ---
+reportlab==4.4.0
+
+# --- Firma Digital ---
+cryptography==44.0.0
+pyhanko==0.25.2
+pyhanko-certvalidator==0.26.4
+
+# --- Testing ---
+pytest==8.3.4
+pytest-django==4.9.0
+pytest-cov==6.0.0
+factory-boy==3.3.1
+faker==33.3.1
+pytest-xdist==3.5.0
+freezegun==1.4.0
+
+# --- Utilidades ---
+django-cleanup==9.0.0
