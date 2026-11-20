@@ -85,8 +85,12 @@ node_modules/
 # Compiled static
 static/css/output.css
 
-# PDF generated certificates (not versioned)
+# PDF generated certificates & private keys (never in git)
 certificates/
+certs/*.pem
+certs/*.key
+certs/*.p12
+certs/*.pfx
 
 # Temporary files
 tmp/
